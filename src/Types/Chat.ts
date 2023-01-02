@@ -74,13 +74,26 @@ export type ChatModification =
     }
     | {
         star: {
-            messages: { id: string, fromMe?: boolean }[],
+            messages: { id: string, fromMe?: boolean }[]
             star: boolean
         }
     }
     | {
         markRead: boolean
         lastMessages: LastMessageList
+    }
+    | {
+        addLabel: string
+    }
+    | {
+        removeLabel: string
+    }
+    | {
+        labelEdit: string
+        color?: null | number
+        name?: null | string
+        deleted?: null | boolean
+        predefinedId?: null | number
     }
     | { delete: true, lastMessages: LastMessageList }
 

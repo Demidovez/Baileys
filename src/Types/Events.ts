@@ -54,6 +54,20 @@ export type BaileysEventMap = {
     'blocklist.update': { blocklist: string[], type: 'add' | 'remove' }
     /** Receive an update on a call, including when the call was received, rejected, accepted */
     'call': WACallEvent[]
+    'labels.set': {
+        id: string
+        chat: string
+    }
+    'labels.unset': {
+        id: string
+        chat: string
+    }
+    'labels.update': {
+        id: string
+        name: string | null | undefined
+        color: number | null | undefined
+        deleted: boolean | null | undefined
+    }
 }
 
 export type BufferedEventData = {
@@ -73,7 +87,7 @@ export type BufferedEventData = {
     messageUpdates: { [key: string]: WAMessageUpdate }
     messageDeletes: { [key: string]: WAMessageKey }
     messageReactions: { [key: string]: { key: WAMessageKey, reactions: proto.IReaction[] } }
-    messageReceipts: { [key: string]: { key: WAMessageKey, userReceipt: proto.IUserReceipt[] } },
+    messageReceipts: { [key: string]: { key: WAMessageKey, userReceipt: proto.IUserReceipt[] } }
     groupUpdates: { [jid: string]: Partial<GroupMetadata> }
 }
 

@@ -5,6 +5,7 @@ import { proto } from '../../WAProto'
 import { DEFAULT_CONNECTION_CONFIG } from '../Defaults'
 import type makeMDSocket from '../Socket'
 import type { BaileysEventEmitter, Chat, ConnectionState, Contact, GroupMetadata, PresenceData, WAMessage, WAMessageCursor, WAMessageKey } from '../Types'
+import { Label, LabelAssociation } from '../Types/Label'
 import { toNumber, updateMessageWithReaction, updateMessageWithReceipt } from '../Utils'
 import { jidNormalizedUser } from '../WABinary'
 import makeOrderedDictionary from './make-ordered-dictionary'
@@ -38,6 +39,8 @@ export default (
 	const groupMetadata: { [_: string]: GroupMetadata } = { }
 	const presences: { [id: string]: { [participant: string]: PresenceData } } = { }
 	const state: ConnectionState = { connection: 'close' }
+	const labels: {[_: string]: Label} = { }
+	const labelsAssociation: {[_: string]: string[]} = { }
 
 	const assertMessageList = (jid: string) => {
 		if(!messages[jid]) {
@@ -241,16 +244,40 @@ export default (
 				}
 			}
 		})
+
+		ev.on('labels.set', ({ id, chat }) => {
+			const hasLabel = labelsAssociation[chat]?.includes(id)
+
+			if(!hasLabel) {
+				labelsAssociation[chat] = [...(labelsAssociation[chat] || []), id]
+			}
+		})
+
+		ev.on('labels.unset', ({ id, chat }) => {
+			labelsAssociation[chat] = (labelsAssociation[chat] || []).filter(currId => currId !== id)
+		})
+
+		ev.on('labels.update', ({ id, ...updatedLabel }) => {
+			if(updatedLabel.deleted) {
+				delete labels[id]
+			} else {
+				labels[id] = { ...labels[id], ...updatedLabel }
+			}
+		})
 	}
 
 	const toJSON = () => ({
 		chats,
 		contacts,
-		messages
+		messages,
+		labels,
+		labelsAssociation
 	})
 
-	const fromJSON = (json: { chats: Chat[], contacts: { [id: string]: Contact }, messages: { [id: string]: WAMessage[] } }) => {
+	const fromJSON = (json: { chats: Chat[], contacts: { [id: string]: Contact }, messages: { [id: string]: WAMessage[] }, labels: {[_: string]: Label}, labelsAssociation: {[_: string]: string[]} }) => {
 		chats.upsert(...json.chats)
+		Object.assign(labels, json.labels)
+		Object.assign(labelsAssociation, json.labelsAssociation)
 		contactsUpsert(Object.values(json.contacts))
 		for(const jid in json.messages) {
 			const list = assertMessageList(jid)
@@ -265,6 +292,8 @@ export default (
 		chats,
 		contacts,
 		messages,
+		labels,
+		labelsAssociation,
 		groupMetadata,
 		state,
 		presences,
